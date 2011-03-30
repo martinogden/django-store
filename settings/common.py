@@ -4,7 +4,7 @@ from path import path
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()
 SITE_ROOT = PROJECT_ROOT.dirname()
 
-sys.path.append(SITE_ROOT / 'apps')
+sys.path.append(PROJECT_ROOT / 'apps')
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -127,6 +127,10 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+
+    'south',
+
+    'catalog',
 )
 
 # A sample logging configuration. The only tangible logging
