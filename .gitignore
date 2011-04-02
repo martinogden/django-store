@@ -2,3 +2,5 @@
 *pyo
 .DS_Store
 media
+settings/local.py
+
