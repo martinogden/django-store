@@ -105,7 +105,11 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'basket.middleware.BasketMiddleware',
 )
+
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+TEMPLATE_CONTEXT_PROCESSORS = TEMPLATE_CONTEXT_PROCESSORS + ('django.core.context_processors.request',)
 
 ROOT_URLCONF = 'urls'
 
@@ -131,6 +135,7 @@ INSTALLED_APPS = (
     'south',
 
     'catalog',
+    'basket',
 )
 
 # A sample logging configuration. The only tangible logging
