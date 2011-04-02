@@ -28,6 +28,14 @@ class Basket(models.Model):
     def __unicode__(self):
         return '%i items(s)' % self.items.count()
 
+    def is_mutable(self):
+        try:
+            self.order
+        except ObjectDoesNotExist:
+            return True
+        else:
+            return self.order.status == 'pending'
+
     def is_empty(self):
         return self.items.count() is 0
 
@@ -41,12 +49,15 @@ class Basket(models.Model):
         if not hasattr(product, 'price'):
             raise InvalidItem
 
-        product, created = self.items.get_or_create(\
+        item, created = self.items.get_or_create(\
             **{'content_type': content_type(product), 'object_id': product.pk,
                 'defaults': {'quantity': quantity}})
-        product.quantity = models.F('quantity') + quantity
-        product.save()
-        return product, created
+        # This *should* use the models.F() NodeExpression, however it throws a 
+        #   TypeError occasionally. This field is unlikely to be updated a lot, so
+        #   a simple += increment should suffice
+        item.quantity += quantity
+        item.save()
+        return item, created
 
     def remove(self, product):
         "Remove product from basket"
@@ -69,7 +80,7 @@ class Item(models.Model):
     object_id = models.IntegerField()
     product = generic.GenericForeignKey('content_type', 'object_id')
 
-    quantity = models.PositiveIntegerField()
+    quantity = models.IntegerField(default=1)
 
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,3 +88,7 @@ class Item(models.Model):
     def __unicode__(self):
         return '%s x %i' % (self.product, self.quantity)
 
+    def save(self, *args, **kwargs):
+        super(Item, self).save(*args, **kwargs)
+        if self.quantity < 1:
+            self.delete()
