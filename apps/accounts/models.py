@@ -33,11 +33,18 @@ class Order(models.Model):
     user = models.ForeignKey('auth.User', related_name='orders')
     basket = models.OneToOneField('basket.Basket', unique=True,\
         related_name='order')
+    items = models.ManyToManyField('basket.Item', related_name='+')
+
     status = models.CharField(max_length=25, choices=STATUS_CHOICES,\
         default=STATUS_CHOICES[0][1])
 
-    def items(self):
-        return self.basket.items.all()
+
+@receiver(post_save, sender=Order)
+def clone_order_basket(sender, instance, **kwargs):
+    """
+    When an order is created, the items from the associated order 
+        should be associated directly with the order"""
+    instance.items.add(*instance.basket.items.all())
 
 @receiver(post_save, sender=User)
 def auto_create_profile(sender, instance, **kwargs):
