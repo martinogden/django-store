@@ -26,7 +26,8 @@ class Product(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return ('product_detail', (), {'slug': self.slug})
+        return ('product_detail', (),
+            {'pk': self.pk, 'slug': self.slug})
 
     def deactivate(self):
         self.is_active = False
