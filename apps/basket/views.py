@@ -44,7 +44,8 @@ class BasketMixin(object):
 
     def get(self, request, *args, **kwargs):
         url = request.META.get('HTTP_REFERER', '/admin/')
-        self.basket = request.session.get('basket')
+        basket_id = request.session.get('basket_id')
+        self.basket = Basket.objects.get(pk=basket_id)
 
         if self.verify_get_params(request):
             item = get_object(request.GET['ct'], request.GET['pk'])

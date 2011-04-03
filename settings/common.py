@@ -109,7 +109,9 @@ MIDDLEWARE_CLASSES = (
 )
 
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
-TEMPLATE_CONTEXT_PROCESSORS += ('django.core.context_processors.request',)
+TEMPLATE_CONTEXT_PROCESSORS += (
+    'django.core.context_processors.request',
+    'basket.context_processors.basket')
 
 ROOT_URLCONF = 'urls'
 

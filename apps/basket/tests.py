@@ -11,7 +11,7 @@ from catalog.models import Product
 from accounts.models import Order
 
 
-class BasketAPITest(TestCase):
+class BasketTest(TestCase):
     fixtures = ['catalog', 'auth']
 
     def setUp(self):
@@ -30,7 +30,15 @@ class BasketAPITest(TestCase):
 
     def test_add_to_basket(self):
         self.basket.add(self.product, 1)
-        self.assertNotEqual(self.basket.is_empty(), True)
+        # basket is populated
+        self.assertEqual(self.basket.items.count(), 1)
+        # Item quantity is correct
+        self.assertEqual(list(self.basket)[0].quantity, 1)
+
+    def test_add_multiple_items_to_basket(self):
+        self.test_add_to_basket()
+        self.basket.add(Product.objects.get(pk=2), 2)
+        self.assertEqual(len(self.basket), 2)
 
     def test_remove_from_basket(self):
         self.basket.add(self.product, 1)
@@ -39,12 +47,15 @@ class BasketAPITest(TestCase):
 
     def test_increment_basket_product(self):
         """
-        There should still only be 1 item in the basket after a duplicate 
+        Assert only be 1 item in the basket after a duplicate 
             item has been added
         """
         self.basket.add(self.product, 1)
-        self.assertEqual(self.basket.items.all()[0].quantity, 2)
-        self.assertEqual(self.basket.items.count(), 1)
+        self.assertEqual(list(self.basket)[0].quantity, 1)
+        # Increment item quantity
+        self.basket.add(self.product, 1)
+        self.assertEqual(list(self.basket)[0].quantity, 2)
+        self.assertEqual(len(self.basket), 1)
 
     def test_decrement_basket_product(self):
         "An item should be removed from the basket if it's quantity drops below 1"
@@ -73,24 +84,28 @@ class BasketAPITest(TestCase):
 
     # Test HTTP requests
 
+    def test_basket_in_context(self):
+        response = self.client.get('/admin/')
+        assert 'basket' in response.context
+
     def test_middleware_adds_basket_to_session(self):
         response = self.client.get('/admin/')
-        assert 'basket' in self.client.session
+        assert 'basket_id' in self.client.session
 
     def test_HTTP_add_to_basket(self):
         """
         Assert Correct messages level is returned to user and basket is
             populated with a single item
         """
-        ct = content_type(self.product)
-        response = self.client.get(reverse('add_to_basket'),
-            {'ct': ct.pk, 'pk': self.product.pk, 'q': 1}, follow=True)
+        response = self.add_item_to_basket()
 
         self.assertTrue(response.context['messages'])
         assert 'success' in list(response.context['messages'])[0].tags.split()
 
         # Test basket has been populated
-        self.assertFalse(self.client.session['basket'].is_empty())
+        self.assertEqual(len(response.context['basket']), 1)
+        # Item quantity is correct
+        self.assertEqual(list(response.context['basket'])[0].quantity, 1)
 
     def test_HTTP_remove_from_basket(self):
         """
@@ -98,7 +113,7 @@ class BasketAPITest(TestCase):
             removed from basket
         """
         # Add item to basket
-        self.test_HTTP_add_to_basket()
+        response = self.add_item_to_basket()
 
         ct = content_type(self.product)
         response = self.client.get(reverse('remove_from_basket'),
@@ -108,7 +123,7 @@ class BasketAPITest(TestCase):
         assert 'info' in list(response.context['messages'])[0].tags.split()
 
         # Test basket has been populated
-        self.assertTrue(self.client.session['basket'].is_empty())
+        self.assertTrue(response.context['basket'].is_empty())
 
     def test_HTTP_doesnt_add_to_basket(self):
         """
@@ -120,4 +135,10 @@ class BasketAPITest(TestCase):
         assert 'error' in list(response.context['messages'])[0].tags.split()
 
         # Test basket hasn't been populated
-        self.assertEqual(len(self.client.session['basket']), 0)
+        self.assertEqual(len(response.context['basket']), 0)
+
+    # Helpers
+    def add_item_to_basket(self):
+        ct = content_type(self.product)
+        return self.client.get(reverse('add_to_basket'),
+            {'ct': ct.pk, 'pk': self.product.pk, 'q': 1}, follow=True)
