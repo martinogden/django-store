@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% load basket_tags %}
 
 {% block content %}
 {{ product }}
+<a href="{% add_to_basket product %}">Add to Basket</a>
 {% endblock content %}

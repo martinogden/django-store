@@ -1,0 +1,16 @@
+{% load basket_tags %}<div id="basket">
+  <h3>Your Basket</h3>
+  <ul>
+  {% for item in basket %}
+    <li>
+      <a href="{{ item.product.get_absolute_url }}">{{ item.product }}</a> x {{ item.quantity }}
+      <small>[<a href="{% remove_from_basket item.product %}">remove</a>]</small>
+    </li>
+  {% empty %}
+    <li>Your basket is empty</li>
+  {% endfor %}
+  </ul>
+  {% with basket|length as item_count %}
+  <p>{{ item_count }} item{{ item_count|pluralize }} | {{ basket.total }}</p>
+  {% endwith %}
+</div>
