@@ -1,15 +1,15 @@
 from django.db import models
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext as _
+
+from basket.utils import content_type
 
 
 class InvalidItem(Exception):
     def __str__(self):
-        return 'An item mush have a price attribute to be added to the basket'
+        return _('An item mush have a price attribute to be added to the basket')
 
-# Shortcut to get an items content type
-content_type = lambda product: ContentType.objects.get_for_model(product)
 
 class Basket(models.Model):
 
@@ -26,7 +26,7 @@ class Basket(models.Model):
         return self.items.count()
 
     def __unicode__(self):
-        return '%i items(s)' % self.items.count()
+        return _('%i items(s)' % self.items.count())
 
     def is_mutable(self):
         try:
@@ -61,8 +61,13 @@ class Basket(models.Model):
 
     def remove(self, product):
         "Remove product from basket"
-        return self.items.get(**{'content_type': content_type(product),
-            'object_id': product.pk}).delete()
+        try:
+            self.items.get(**{'content_type': content_type(product),
+                'object_id': product.pk}).delete()
+        except ObjectDoesNotExist:
+            return False
+        else:
+            return True
 
     def total(self):
         "Total cost of all items in basket"
@@ -76,7 +81,7 @@ class Item(models.Model):
 
     basket = models.ForeignKey('basket.Basket', related_name='items')
 
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.IntegerField()
     product = generic.GenericForeignKey('content_type', 'object_id')
 
