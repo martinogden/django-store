@@ -10,10 +10,10 @@ register = template.Library()
 
 class BasketNode(template.Node):
     def __init__(self, *args):
-        self.obj = template.Variable(args[0])
+        self.obj_var = template.Variable(args[0])
 
     def render(self, context):
-        self.obj = self.obj.resolve(context)
+        self.obj = self.obj_var.resolve(context)
         self.ct = content_type(self.obj)
         self.params = QueryDict(None).copy()
 
