@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
 from django.views.generic.base import RedirectView
 from django.http import HttpResponseRedirect
@@ -7,6 +6,7 @@ from django.contrib import messages
 from django.utils.translation import ugettext as _
 
 from basket.models import Basket, InvalidItem
+from basket.utils import get_object
 
 
 SUCCESS_MESSAGE = '%i %ss successfully added to your basket'
@@ -25,16 +25,6 @@ class BasketMixin(object):
         This method should be overriden and an action should be implemented,
             i.e. add_item or remove_item"""
         raise NotImplementedError
-
-    def get_object(self, ct_pk, pk):
-        "Return an instance of the item defined by it's content type and the instance pk"
-        try:
-            model = ContentType.objects.get(pk=ct_pk)
-            item = model.get_object_for_this_type(pk=pk)
-        except ObjectDoesNotExist:
-            return None
-        else:
-            return item
 
     def set_message(self, request):
         "Dynamically set level and content of message"
@@ -57,7 +47,7 @@ class BasketMixin(object):
         self.basket = request.session.get('basket')
 
         if self.verify_get_params(request):
-            item = self.get_object(request.GET['ct'], request.GET['pk'])
+            item = get_object(request.GET['ct'], request.GET['pk'])
             if item:
                 self.action(request, item)
 
