@@ -55,8 +55,9 @@ class Basket(models.Model):
         # This *should* use the models.F() NodeExpression, however it throws a 
         #   TypeError occasionally. This field is unlikely to be updated a lot, so
         #   a simple += increment should suffice
-        item.quantity += quantity
-        item.save()
+        if not created:
+            item.quantity += quantity
+            item.save()
         return item, created
 
     def remove(self, product):
@@ -75,7 +76,7 @@ class Basket(models.Model):
         for item in self.items.all():
             total += item.product.price * item.quantity
         return total
-            
+
 
 class Item(models.Model):
 
@@ -85,7 +86,7 @@ class Item(models.Model):
     object_id = models.IntegerField()
     product = generic.GenericForeignKey('content_type', 'object_id')
 
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(default=0)
 
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
