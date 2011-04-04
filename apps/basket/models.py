@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext as _
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 
 from basket.utils import content_type
 
@@ -98,3 +100,10 @@ class Item(models.Model):
         super(Item, self).save(*args, **kwargs)
         if self.quantity < 1:
             self.delete()
+
+
+@receiver(user_logged_in)
+def associate_user_with_basket(sender, request, user):
+    basket_id = request.session.get('basket_id')
+    basket = Basket.objects.filter(pk=basket_id)
+    basket.update(user=user)
