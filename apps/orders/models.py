@@ -12,11 +12,17 @@ class InvalidItem(Exception):
     def __str__(self):
         return _('An item must have a price attribute to be added to the order')
 
+STATUS_CHOICES = [
+    (-1, 'Cancelled'),
+    (0, 'Pending'),
+    (1, 'Completed')]
 
 class Order(models.Model):
 
     user = models.ForeignKey('auth.User', related_name='orders',\
         null=True, blank=True)
+
+    status = models.IntegerField(choices=STATUS_CHOICES)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -68,6 +68,19 @@ class OrderTest(TestCase):
         self.order.add(self.product, 1)
         self.assertNotEqual(Decimal('0'), self.order.total())
 
+    def test_order_is_mutable(self):
+        self.assertEqual(self.order.is_mutable(), True)
+    
+        # Create order
+        user = User.objects.get(pk=1)
+        order = Order.objects.create(order=self.order, user=user)
+        self.assertEqual(self.order.is_mutable(), True)
+    
+        # Make order complete
+        order.status = 2
+        order.save()
+        self.assertNotEqual(self.order.is_mutable(), False)
+
     # Test HTTP requests
 
     def test_order_in_context(self):
