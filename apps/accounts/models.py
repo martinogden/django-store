@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class UserProfile(models.Model):
 
     user = models.OneToOneField('auth.User', related_name='profile')
@@ -30,6 +31,8 @@ STATUS_CHOICES = [
     (0, 'cancelled')]
 
 class Order(models.Model):
+    uuid = models.CharField(max_length=40, primary_key=True, editable=False)
+
     user = models.ForeignKey('auth.User', related_name='orders')
     basket = models.OneToOneField('basket.Basket', unique=True,\
         related_name='order')
@@ -38,6 +41,14 @@ class Order(models.Model):
     status = models.CharField(max_length=25, choices=STATUS_CHOICES,\
         default=STATUS_CHOICES[0][1])
 
+    def clean_fields(self, *args, **kwargs):
+        if not self.uuid:
+            self.uuid = uuid.uuid4()
+        return super(Order, self).clean_fields(*args, **kwargs)
+
+
+# Shortcut to User#get_profile()
+User.profile = property(lambda u: u.get_profile())
 
 @receiver(post_save, sender=Order)
 def clone_order_basket(sender, instance, **kwargs):
@@ -50,5 +61,7 @@ def clone_order_basket(sender, instance, **kwargs):
 def auto_create_profile(sender, instance, **kwargs):
     UserProfile.objects.get_or_create(user=instance)
 
-# Shortcut to User#get_profile()
-User.profile = property(lambda u: u.get_profile())
+@receiver(post_save, sender='basket.Basket')
+def keep_order_synced_with_basket(sender, instance, **kwargs):
+    if instance.order:
+        instance.order.save()
