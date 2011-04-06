@@ -105,13 +105,13 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'basket.middleware.BasketMiddleware',
+    'orders.middleware.OrderMiddleware',
 )
 
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
 TEMPLATE_CONTEXT_PROCESSORS += (
     'django.core.context_processors.request',
-    'basket.context_processors.basket')
+    'orders.context_processors.order')
 
 ROOT_URLCONF = 'urls'
 
@@ -137,7 +137,7 @@ INSTALLED_APPS = (
     'south',
 
     'catalog',
-    'basket',
+    'orders',
     'accounts',
 )
 

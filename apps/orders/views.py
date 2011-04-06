@@ -5,20 +5,19 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 
-from basket.models import Basket, InvalidItem
-from basket.utils import get_object
+from orders.models import Order, InvalidItem
+from orders.utils import get_object
 
 
 SUCCESS_MESSAGE = '%i %ss successfully added to your basket'
 FAILURE_MESSAGE = 'There was an error adding the item(s) to your basket'
 
 
-class BasketMixin(object):
-    "Add remove any item with a price attribute to the basket"
+class OrderMixin(object):
+    "Add or remove any item with a price attribute to the basket"
 
     # Set default message to an error before we check for a successful add
     message = 'error', FAILURE_MESSAGE
-
 
     def action(self, request, *args):
         """
@@ -43,9 +42,9 @@ class BasketMixin(object):
             return True
 
     def get(self, request, *args, **kwargs):
-        url = request.META.get('HTTP_REFERER', '/admin/')
-        basket_id = request.session.get('basket_id')
-        self.basket = Basket.objects.get(pk=basket_id)
+        url = request.META.get('HTTP_REFERER', '/')
+        order_id = request.session.get('order_id')
+        self.order = Order.objects.get(pk=order_id)
 
         if self.verify_get_params(request):
             item = get_object(request.REQUEST['ct'], request.REQUEST['pk'])
@@ -56,13 +55,13 @@ class BasketMixin(object):
         return HttpResponseRedirect(url)
 
 
-class AddToBasketView(BasketMixin, RedirectView):
+class AddToOrderView(OrderMixin, RedirectView):
     params = ['ct', 'pk', 'q']
 
     def action(self, request, item):
         qty = int(request.REQUEST['q'])
         try:
-            self.basket.add(item, qty)
+            self.order.add(item, qty)
         except InvalidItem:
             return False
         else:
@@ -70,11 +69,11 @@ class AddToBasketView(BasketMixin, RedirectView):
             return True
 
 
-class RemoveFromBasketView(BasketMixin, RedirectView):
+class RemoveFromOrderView(OrderMixin, RedirectView):
     params = ['ct', 'pk']
 
     def action(self, request, item):
-        if self.basket.remove(item):
+        if self.order.remove(item):
             self.message = 'info', 'Item Removed %s' % item.__unicode__()
         else:
             self.message = 'error', 'There was a problem removing the item from your basket'

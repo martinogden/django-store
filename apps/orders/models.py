@@ -5,17 +5,17 @@ from django.utils.translation import ugettext as _
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 
-from basket.utils import content_type
+from orders.utils import content_type
 
 
 class InvalidItem(Exception):
     def __str__(self):
-        return _('An item mush have a price attribute to be added to the basket')
+        return _('An item must have a price attribute to be added to the order')
 
 
-class Basket(models.Model):
+class Order(models.Model):
 
-    user = models.ForeignKey('auth.User', related_name='baskets',\
+    user = models.ForeignKey('auth.User', related_name='orders',\
         null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -31,22 +31,18 @@ class Basket(models.Model):
         return _('%i items(s)' % self.items.count())
 
     def is_mutable(self):
-        try:
-            self.order
-        except ObjectDoesNotExist:
-            return True
-        else:
-            return self.order.status == 'pending'
+        return self.status == 'pending'
 
     def is_empty(self):
-        return self.items.count() is 0
+        return self.items.count() == 0
 
     def add(self, product, quantity):
         """
-        Add any model to the basket which has a 'price' attribute
+        Add any model to the order which has a 'price' attribute
 
-        If the item exists, increment to quantity accordingly:
-            N.B the quantity can be decremented by settings quantity < 0
+        If the item exists, increment the quantity accordingly:
+            N.B the quantity can be decremented by setting quantity
+            to a negative integer
         """
         if not hasattr(product, 'price'):
             raise InvalidItem
@@ -63,7 +59,7 @@ class Basket(models.Model):
         return item, created
 
     def remove(self, product):
-        "Remove product from basket"
+        "Remove product from order"
         try:
             self.items.get(**{'content_type': content_type(product),
                 'object_id': product.pk}).delete()
@@ -73,7 +69,7 @@ class Basket(models.Model):
             return True
 
     def total(self):
-        "Total cost of all items in basket"
+        "Total cost of all items in order"
         total = 0
         for item in self.items.all():
             total += item.product.price * item.quantity
@@ -82,7 +78,7 @@ class Basket(models.Model):
 
 class Item(models.Model):
 
-    basket = models.ForeignKey('basket.Basket', related_name='items')
+    order = models.ForeignKey('orders.Order', related_name='items')
 
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.IntegerField()
@@ -103,7 +99,7 @@ class Item(models.Model):
 
 
 @receiver(user_logged_in)
-def associate_user_with_basket(sender, request, user):
-    basket_id = request.session.get('basket_id')
-    basket = Basket.objects.filter(pk=basket_id)
-    basket.update(user=user)
+def associate_user_with_order(sender, request, user, **kwargs):
+    order_id = request.session.get('order_id')
+    order = Order.objects.filter(pk=order_id)
+    order.update(user=user)
