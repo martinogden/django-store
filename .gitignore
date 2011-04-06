@@ -3,4 +3,7 @@
 .DS_Store
 media
 settings/local.py
+README
+apps/paypal_test/
+
 

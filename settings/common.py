@@ -133,7 +133,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-
+    'paypal',
     'south',
 
     'catalog',
@@ -165,3 +165,9 @@ LOGGING = {
 }
 
 AUTH_PROFILE_MODULE = 'accounts.UserProfile'
+
+# PAYPAL
+PAYPAL_USER  = "kerpun_1302074714_biz_api1.hotmail.com"
+PAYPAL_PASSWORD = "1302074723"
+PAYPAL_SIGNATURE = "Ax8rxaC4ykZ.uEF1q7hmieLWH.ScAenIiszeW75cwz3VuKTCYk.KIS9s"
+PAYPAL_DEBUG = True # for sandbox. False for real environment.
