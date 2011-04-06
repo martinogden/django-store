@@ -34,10 +34,10 @@ class BasketMixin(object):
             return False
 
     def verify_get_params(self, request):
-        "Check all required params exist in request.GET"
+        "Check all required params exist in request.REQUEST"
         try:
-            [request.GET[param] for param in self.params]
-        except MultiValueDictKeyError:
+            [request.REQUEST[param] for param in self.params]
+        except (MultiValueDictKeyError, KeyError):
             return False
         else:
             return True
@@ -48,7 +48,7 @@ class BasketMixin(object):
         self.basket = Basket.objects.get(pk=basket_id)
 
         if self.verify_get_params(request):
-            item = get_object(request.GET['ct'], request.GET['pk'])
+            item = get_object(request.REQUEST['ct'], request.REQUEST['pk'])
             if item:
                 self.action(request, item)
 
@@ -60,7 +60,7 @@ class AddToBasketView(BasketMixin, RedirectView):
     params = ['ct', 'pk', 'q']
 
     def action(self, request, item):
-        qty = int(request.GET['q'])
+        qty = int(request.REQUEST['q'])
         try:
             self.basket.add(item, qty)
         except InvalidItem:
