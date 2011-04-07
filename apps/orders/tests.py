@@ -5,7 +5,7 @@ from django.test.client import Client
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
-from orders.models import Order, InvalidItem
+from orders.models import Order, InvalidItem, OrderNotMutable
 from orders.utils import content_type
 from catalog.models import Product
 
@@ -70,16 +70,21 @@ class OrderTest(TestCase):
 
     def test_order_is_mutable(self):
         self.assertEqual(self.order.is_mutable(), True)
-    
-        # Create order
-        user = User.objects.get(pk=1)
-        order = Order.objects.create(order=self.order, user=user)
-        self.assertEqual(self.order.is_mutable(), True)
-    
-        # Make order complete
-        order.status = 2
-        order.save()
-        self.assertNotEqual(self.order.is_mutable(), False)
+
+        # populate order
+        self.order.add(self.product, 1)
+
+        # Mark order as complete
+        self.order.status = 1
+        self.order.save()
+
+        # Check order cannot be tampered with
+        self.assertEqual(self.order.is_mutable(), False)
+        self.assertRaises(OrderNotMutable, self.order.add, product=self.product, quantity=1)
+        self.assertRaises(OrderNotMutable, self.order.remove, product=self.product)
+
+        item = self.order.items.all()[0]
+        self.assertRaises(OrderNotMutable, item.delete)
 
     # Test HTTP requests
 
