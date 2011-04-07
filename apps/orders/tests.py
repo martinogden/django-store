@@ -3,9 +3,10 @@ from decimal import Decimal
 from django.test import TestCase
 from django.test.client import Client
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 from django.core.urlresolvers import reverse
 
-from orders.models import Order, InvalidItem, OrderNotMutable
+from orders.models import Order, Item, InvalidItem, OrderNotMutable
 from orders.utils import content_type
 from catalog.models import Product
 
@@ -65,8 +66,8 @@ class OrderTest(TestCase):
         self.assertEqual(self.order.is_empty(), True)
 
     def test_order_total(self):
-        self.order.add(self.product, 1)
-        self.assertNotEqual(Decimal('0'), self.order.total())
+        self.order.add(self.product, 2)
+        self.assertEqual(self.product.price*2, self.order.total())
 
     def test_order_is_mutable(self):
         self.assertEqual(self.order.is_mutable(), True)
@@ -85,6 +86,11 @@ class OrderTest(TestCase):
 
         item = self.order.items.all()[0]
         self.assertRaises(OrderNotMutable, item.delete)
+
+    def test_unique_item(self):
+        kwargs = dict(product=self.product, quantity=1, order=self.order)
+        Item.objects.create(**kwargs)
+        self.assertRaises(IntegrityError, Item.objects.create, **kwargs)
 
     # Test HTTP requests
 

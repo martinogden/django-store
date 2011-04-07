@@ -1,34 +1,18 @@
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext as _
 from django.contrib.auth.signals import user_logged_in
-from django.db.models.signals import pre_delete, pre_save
-from django.dispatch import receiver
 
 from orders.utils import content_type
 
-
-class InvalidItem(Exception):
-    def __str__(self):
-        return _('An item must have a price attribute to be added to the order')
-
-
-class OrderNotMutable(Exception):
-    def __str__(self):
-        return _('Items cannot be added to a completed order')
-
-
-STATUS_CHOICES = [
-    (-1, 'Cancelled'),
-    (0, 'Pending'),
-    (1, 'Completed')]
 
 class Order(models.Model):
 
     user = models.ForeignKey('auth.User', related_name='orders',\
         null=True, blank=True)
 
+    STATUS_CHOICES = [(-1, 'Cancelled'), (0, 'Pending'), (1, 'Completed')]
     status = models.IntegerField(choices=STATUS_CHOICES, default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -49,47 +33,36 @@ class Order(models.Model):
     def is_empty(self):
         return self.items.count() == 0
 
-    def add(self, product, quantity):
+    def add(self, product, quantity=1):
         """
-        Add any model to the order which has a 'price' attribute
+        Add any model to the order which has a 'price' attribute.
+        Quantity can be decremented by setting it to a negative integer"""
 
-        If the item exists, increment the quantity accordingly:
-            N.B the quantity can be decremented by setting quantity
-            to a negative integer
-        """
-        if not hasattr(product, 'price'):
-            raise InvalidItem
-
-        item, created = self.items.get_or_create(\
-            **{'content_type': content_type(product), 'object_id': product.pk,
-                'defaults': {'quantity': quantity}})
-        # This *should* use the models.F() NodeExpression, however it throws a 
-        #   TypeError occasionally. This field is unlikely to be updated a lot, so
-        #   a simple += increment should suffice
-        if not created:
-            item.quantity += quantity
-            item.save()
-        return item, created
+        kwargs = self.__item_kwargs(product)
+        try:
+            self.items.create(**dict({'quantity': quantity}, **kwargs))
+        except IntegrityError:
+            # If item exists, increment the quantity.
+            self.items.filter(**kwargs)\
+                .update(quantity=models.F('quantity') + quantity)
 
     def remove(self, product):
         "Remove product from order"
-        try:
-            self.items.get(**{'content_type': content_type(product),
-                'object_id': product.pk}).delete()
-        except ObjectDoesNotExist:
-            return False
-        else:
-            return True
+        self.items.filter(**self.__item_kwargs(product)).delete()
 
     def total(self):
         "Total cost of all items in order"
-        total = 0
-        for item in self.items.all():
-            total += item.product.price * item.quantity
-        return total
+        return sum([i.product.price*i.quantity for i in self.items.all()])
+
+    def __item_kwargs(self, product):
+        "Default arguments to get or create an item"
+        return {'content_type': content_type(product), 'object_id': product.pk}
 
 
 class Item(models.Model):
+
+    class Meta:
+        unique_together = ('content_type', 'order', 'object_id')
 
     order = models.ForeignKey('orders.Order', related_name='items')
 
@@ -106,20 +79,34 @@ class Item(models.Model):
         return '%s x %i' % (self.product, self.quantity)
 
     def save(self, *args, **kwargs):
+        if not hasattr(self.product, 'price'):
+            raise InvalidItem
         super(Item, self).save(*args, **kwargs)
-        if self.quantity < 1:
+        if self.pk and self.quantity < 1:
             self.delete()
+
+
+class InvalidItem(Exception):
+
+    def __str__(self):
+        return _('An item must have a price attribute')
+
+
+class OrderNotMutable(Exception):
+
+    def __str__(self):
+        return _('Items cannot be added to a completed order')
 
 
 def is_completed_order(sender, instance, **kwargs):
     if not instance.order.is_mutable():
         raise OrderNotMutable
-pre_delete.connect(is_completed_order, sender=Item)
-pre_save.connect(is_completed_order, sender=Item)
+models.signals.pre_delete.connect(is_completed_order, sender=Item)
+models.signals.pre_save.connect(is_completed_order, sender=Item)
 
 
-@receiver(user_logged_in)
 def associate_user_with_order(sender, request, user, **kwargs):
     order_id = request.session.get('order_id')
     order = Order.objects.filter(pk=order_id)
     order.update(user=user)
+user_logged_in.connect(associate_user_with_order)

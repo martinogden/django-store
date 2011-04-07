@@ -73,7 +73,9 @@ class RemoveFromOrderView(OrderMixin, RedirectView):
     params = ['ct', 'pk']
 
     def action(self, request, item):
-        if self.order.remove(item):
-            self.message = 'info', 'Item Removed %s' % item.__unicode__()
-        else:
+        try:
+            self.order.remove(item)
+        except:
             self.message = 'error', 'There was a problem removing the item from your basket'
+        else:
+            self.message = 'info', 'Item Removed %s' % item.__unicode__()
