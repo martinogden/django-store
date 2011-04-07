@@ -1,16 +1,18 @@
 {% load order %}<div id="basket">
   <h3>Your Basket</h3>
   <ul>
+  {% if order and order|length %}
   {% for item in order %}
     <li>
       <a href="{{ item.product.get_absolute_url }}">{{ item.product }}</a> x {{ item.quantity }}
       <small>[<a href="{% remove_from_order item.product %}">remove</a>]</small>
     </li>
-  {% empty %}
-    <li>Your basket is empty</li>
   {% endfor %}
   </ul>
   {% with order|length as item_count %}
   <p>{{ item_count }} item{{ item_count|pluralize }} | {{ order.total }}</p>
   {% endwith %}
+  {% else %}
+  <p>Your order is empty</p>
+  {% endif %}
 </div>

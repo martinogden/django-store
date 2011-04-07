@@ -95,12 +95,9 @@ class OrderTest(TestCase):
     # Test HTTP requests
 
     def test_order_in_context(self):
+        self.add_item_to_order()
         response = self.client.get('/admin/')
         assert 'order' in response.context
-
-    def test_middleware_adds_order_to_session(self):
-        response = self.client.get('/admin/')
-        assert 'order_id' in self.client.session
 
     def test_HTTP_add_to_order(self):
         """

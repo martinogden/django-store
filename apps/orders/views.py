@@ -44,7 +44,11 @@ class OrderMixin(object):
     def get(self, request, *args, **kwargs):
         url = request.META.get('HTTP_REFERER', '/')
         order_id = request.session.get('order_id')
-        self.order = Order.objects.get(pk=order_id)
+        if order_id:
+            self.order = Order.objects.get(pk=order_id)
+        else:
+            self.order = Order.objects.create()
+            request.session['order_id'] = self.order.pk
 
         if self.verify_get_params(request):
             item = get_object(request.REQUEST['ct'], request.REQUEST['pk'])
