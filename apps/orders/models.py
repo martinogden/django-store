@@ -22,7 +22,7 @@ class Order(models.Model):
         return iter(self.items.all())
 
     def __len__(self):
-        return self.items.count()
+        return sum([i['quantity'] for i in self.items.values('quantity')])
 
     def __unicode__(self):
         return _('%i items(s)' % self.items.count())
@@ -40,11 +40,12 @@ class Order(models.Model):
 
         kwargs = self.__item_kwargs(product)
         try:
-            self.items.create(**dict({'quantity': quantity}, **kwargs))
-        except IntegrityError:
             # If item exists, increment the quantity.
-            self.items.filter(**kwargs)\
-                .update(quantity=models.F('quantity') + quantity)
+            item = self.items.get(**kwargs)
+            item.quantity=models.F('quantity') + quantity
+            return item.save()
+        except ObjectDoesNotExist:
+            return self.items.create(**dict({'quantity': quantity}, **kwargs))
 
     def remove(self, product):
         "Remove product from order"

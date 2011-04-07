@@ -38,7 +38,7 @@ class OrderTest(TestCase):
     def test_add_multiple_items_to_order(self):
         self.test_add_to_order()
         self.order.add(Product.objects.get(pk=2), 2)
-        self.assertEqual(len(self.order), 2)
+        self.assertEqual(self.order.items.count(), 2)
 
     def test_remove_from_order(self):
         self.order.add(self.product, 1)
@@ -55,7 +55,7 @@ class OrderTest(TestCase):
         # Increment item quantity
         self.order.add(self.product, 1)
         self.assertEqual(list(self.order)[0].quantity, 2)
-        self.assertEqual(len(self.order), 1)
+        self.assertEqual(self.order.items.count(), 1)
 
     def test_decrement_order_product(self):
         "An item should be removed from the order if it's quantity drops below 1"
@@ -102,8 +102,7 @@ class OrderTest(TestCase):
     def test_HTTP_add_to_order(self):
         """
         Assert Correct messages level is returned to user and order is
-            populated with a single item
-        """
+            populated with a single item"""
         response = self.add_item_to_order()
 
         self.assertTrue(response.context['messages'])
