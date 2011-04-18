@@ -6,7 +6,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^', include('catalog.urls')),
-    url(r'^order/', include('orders.urls')),
+    url(r'^order/', include('orders.urls', namespace='order')),
     
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),

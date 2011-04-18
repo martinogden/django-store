@@ -95,8 +95,7 @@ class OrderTest(TestCase):
     # Test HTTP requests
 
     def test_order_in_context(self):
-        self.add_item_to_order()
-        response = self.client.get('/admin/')
+        response = self.add_item_to_order()
         assert 'order' in response.context
 
     def test_HTTP_add_to_order(self):
@@ -122,7 +121,7 @@ class OrderTest(TestCase):
         response = self.add_item_to_order()
 
         ct = content_type(self.product)
-        response = self.client.get(reverse('remove_from_order'),
+        response = self.client.get(reverse('order:remove-item'),
             {'ct': ct.pk, 'pk': self.product.pk}, follow=True)
 
         self.assertTrue(response.context['messages'])
@@ -135,7 +134,7 @@ class OrderTest(TestCase):
         """
         Assert call to add order url with incorrect (empty) params returns an error
         """
-        response = self.client.get(reverse('add_to_order'), follow=True)
+        response = self.client.post(reverse('order:add-item'), follow=True)
 
         self.assertTrue(response.context['messages'])
         assert 'error' in list(response.context['messages'])[0].tags.split()
@@ -146,5 +145,5 @@ class OrderTest(TestCase):
     # Helpers
     def add_item_to_order(self):
         ct = content_type(self.product)
-        return self.client.get(reverse('add_to_order'),
+        return self.client.post(reverse('order:add-item'),
             {'ct': ct.pk, 'pk': self.product.pk, 'q': 1}, follow=True)

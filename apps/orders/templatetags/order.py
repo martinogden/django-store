@@ -1,11 +1,20 @@
-from django import template
-from django.http import QueryDict
+from django import template, forms, http
 from django.core.urlresolvers import reverse
 
 from orders.utils import content_type
-
+from orders.models import Item
 
 register = template.Library()
+
+
+class ItemForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(ItemForm, self).__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            field.widget = forms.widgets.HiddenInput()
+
+    class Meta:
+        model = Item
 
 
 class OrderNode(template.Node):
@@ -14,8 +23,7 @@ class OrderNode(template.Node):
 
     def render(self, context):
         self.obj = self.obj_var.resolve(context)
-        self.ct = content_type(self.obj)
-        self.params = QueryDict(None).copy()
+        self.form = ItemForm(instance=self.obj)
 
 
 class AddItemNode(OrderNode):
@@ -25,16 +33,22 @@ class AddItemNode(OrderNode):
 
     def render(self, context):
         super(AddItemNode, self).render(context)
-        self.params.update(
-            {'ct': self.ct.pk, 'pk': self.obj.pk, 'q': self.qty})
-        return '%s?%s' % (reverse('add_to_order'), self.params.urlencode())
+        # self.form.save(commit=False)
+        # self.form.quantity = self.qty
+        context['form'] = self.form
+        return template.Template("""<form action={% url order:add_item %} method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Add to Order">
+</form>""").render(template.Context(context))
 
 
 class RemoveItemNode(OrderNode):
     def render(self, context):
         super(RemoveItemNode, self).render(context)
-        self.params.update({'ct': self.ct.pk, 'pk': self.obj.pk})
-        return '%s?%s' % (reverse('remove_from_order'), self.params.urlencode())
+        query_dict = http.QueryDict(None).copy()
+        query_dict.update({'ct': content_type(self.obj).pk, 'pk': self.obj.pk})
+        return '%s?%s' % (reverse('order:remove-item'), query_dict.urlencode())
 
 
 @register.tag

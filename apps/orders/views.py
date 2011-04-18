@@ -1,5 +1,6 @@
+import logging
 from django.utils.datastructures import MultiValueDictKeyError
-from django.views.generic.base import RedirectView
+from django.views.generic.base import TemplateView
 from django.http import HttpResponseRedirect
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
@@ -9,77 +10,50 @@ from orders.models import Order, InvalidItem
 from orders.utils import get_object
 
 
-SUCCESS_MESSAGE = '%i %ss successfully added to your basket'
-FAILURE_MESSAGE = 'There was an error adding the item(s) to your basket'
+class OrderView(TemplateView):
+    "Add or remove any item with a price attribute to the order"
 
-
-class OrderMixin(object):
-    "Add or remove any item with a price attribute to the basket"
-
-    # Set default message to an error before we check for a successful add
-    message = 'error', FAILURE_MESSAGE
-
-    def action(self, request, *args):
-        """
-        This method should be overriden and an action should be implemented,
-            i.e. add_item or remove_item"""
-        raise NotImplementedError
-
-    def set_message(self, request):
-        "Dynamically set level and content of message"
+    order_method_names = ['add_item', 'remove_item']
+    method = None
+ 
+    def add_item(self, request, *args, **kwargs):
+        qty = int(request.POST.get('q', 1))
         try:
-            getattr(messages, self.message[0])(request, _(self.message[1]))
-        except AttributeError:
-            return False
-
-    def verify_get_params(self, request):
-        "Check all required params exist in request.REQUEST"
-        try:
-            [request.REQUEST[param] for param in self.params]
-        except (MultiValueDictKeyError, KeyError):
-            return False
-        else:
-            return True
-
-    def get(self, request, *args, **kwargs):
-        url = request.META.get('HTTP_REFERER', '/')
-        order_id = request.session.get('order_id')
-        if order_id:
-            self.order = Order.objects.get(pk=order_id)
-        else:
-            self.order = Order.objects.create()
-            request.session['order_id'] = self.order.pk
-
-        if self.verify_get_params(request):
-            item = get_object(request.REQUEST['ct'], request.REQUEST['pk'])
-            if item:
-                self.action(request, item)
-
-        self.set_message(request)
-        return HttpResponseRedirect(url)
-
-
-class AddToOrderView(OrderMixin, RedirectView):
-    params = ['ct', 'pk', 'q']
-
-    def action(self, request, item):
-        qty = int(request.REQUEST['q'])
-        try:
-            self.order.add(item, qty)
+            self.order.add(self.item, qty)
         except InvalidItem:
-            return False
+            messages.error(request, _('%i %ss successfully added to your basket' % (qty, self.item)))
         else:
-            self.message = 'success', SUCCESS_MESSAGE % (qty, item.__unicode__())
-            return True
+            messages.success(request, _('There was an error adding the item(s) to your basket'))
+        return HttpResponseRedirect(self.url)
 
-
-class RemoveFromOrderView(OrderMixin, RedirectView):
-    params = ['ct', 'pk']
-
-    def action(self, request, item):
+    def remove_item(self, request, *args, **kwargs):
         try:
-            self.order.remove(item)
+            self.order.remove(self.item)
         except:
-            self.message = 'error', 'There was a problem removing the item from your basket'
+            messages.error(request, _('There was a problem removing the item from your basket'))
         else:
-            self.message = 'info', 'Item Removed %s' % item.__unicode__()
+            messages.info(request, _('%s Removed' % self.item))
+        return HttpResponseRedirect(self.url)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.order = self.__get_order(request)
+        self.url = request.META.get('HTTP_REFERER', '/products/')
+    
+        try:
+            self.item = get_object(request.REQUEST['ct'], request.REQUEST['pk'])
+        except KeyError:
+            messages.error(request, _('Invalid parameters'))
+            return HttpResponseRedirect(self.url)
+            
+        if self.method in self.order_method_names:
+            handler = getattr(self, self.method)
+            return handler(request, *args, **kwargs)
+        return super(OrderView, self).dispatch(request, *args, **kwargs)
+
+    def __get_order(self, request):
+        "Get user's order from session"
+        order_id = request.session.get('order_id', None)
+        order, created = Order.objects.get_or_create(pk=order_id)
+        if created:
+            request.session['order_id'] = order.pk
+        return order
