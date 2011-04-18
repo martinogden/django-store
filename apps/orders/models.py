@@ -42,10 +42,11 @@ class Order(models.Model):
         try:
             # If item exists, increment the quantity.
             item = self.items.get(**kwargs)
-            item.quantity=models.F('quantity') + quantity
-            return item.save()
         except ObjectDoesNotExist:
             return self.items.create(**dict({'quantity': quantity}, **kwargs))
+        else:
+            item.quantity = models.F('quantity') + quantity
+            return item.save()
 
     def remove(self, product):
         "Remove product from order"
