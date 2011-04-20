@@ -16,6 +16,6 @@ def order(request):
             order = Order.objects.create()
             request.session['order_id'] = order.pk
             messages.error(request, _('Oops, your session has expired, your order is now empty'))
-        return {
-            'order': order
-        }
+        return {'order': order}
+    else:
+        return {'order': None}

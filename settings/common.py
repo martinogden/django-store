@@ -153,9 +153,10 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler'
         },
         'file':{
-            'level':'INFO',
-            'class':'logging.FileHandler',
-            'filename': SITE_ROOT / 'logs/app_log'
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': SITE_ROOT / 'logs/application',
+            'maxBytes': 1024,
+            'backupCount': 3,
         },
     },
     'loggers': {

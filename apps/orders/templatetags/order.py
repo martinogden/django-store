@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger('django')
 from django import template, forms, http
 from django.core.urlresolvers import reverse
 
@@ -10,9 +12,9 @@ register = template.Library()
 class ItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ItemForm, self).__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            field.widget = forms.widgets.HiddenInput()
-
+        for key, field in self.fields.items():
+            if key != 'quantity':
+                field.widget = forms.widgets.HiddenInput()
     class Meta:
         model = Item
 
@@ -22,8 +24,9 @@ class OrderNode(template.Node):
         self.obj_var = template.Variable(args[0])
 
     def render(self, context):
-        self.obj = self.obj_var.resolve(context)
-        self.form = ItemForm(instance=self.obj)
+        obj = self.obj_var.resolve(context)
+        self.item = Item(object_id=obj.pk,\
+            content_type_id=content_type(obj))
 
 
 class AddItemNode(OrderNode):
@@ -33,12 +36,15 @@ class AddItemNode(OrderNode):
 
     def render(self, context):
         super(AddItemNode, self).render(context)
+        self.item.quantity = self.qty
+        self.form = ItemForm(instance=self.item)
         # self.form.save(commit=False)
         # self.form.quantity = self.qty
         context['form'] = self.form
-        return template.Template("""<form action={% url order:add_item %} method="post">
+        logger.info(self.form)
+        return template.Template("""<form action={% url order:add-item %} method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    {{ form }}
     <input type="submit" value="Add to Order">
 </form>""").render(template.Context(context))
 
@@ -47,7 +53,7 @@ class RemoveItemNode(OrderNode):
     def render(self, context):
         super(RemoveItemNode, self).render(context)
         query_dict = http.QueryDict(None).copy()
-        query_dict.update({'ct': content_type(self.obj).pk, 'pk': self.obj.pk})
+        query_dict.update({'ct': self.item.content_type_id, 'pk': self.item.object_id})
         return '%s?%s' % (reverse('order:remove-item'), query_dict.urlencode())
 
 
