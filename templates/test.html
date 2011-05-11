@@ -1,0 +1,6 @@
+<form action="{% url order:add-item %}" method="post">
+  {% csrf_token %}
+  {{ form.errors|pprint }}
+  {{ form.as_p }}
+  <input type="submit" value="update order">
+</form>

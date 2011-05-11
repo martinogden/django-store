@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block basket %}{% endblock basket %}
+ 
+{% block content %}
+{% load order %}<div id="basket">
+  <h3>Your Order</h3>
+
+{% if order and order|length %}
+  {% with order|length as item_count %}
+  <p>{{ item_count }} item{{ item_count|pluralize }} | {{ order.total }}</p>
+  {% endwith %}
+
+<form action="{% url order:review %}" method="post">
+    {% csrf_token %}
+    {{ form.management_form }}
+    {% for form in form.forms %}
+      {{ form.instance.product }}
+      {{ form }}
+    {% endfor %}
+
+    <input type="submit" value="update">
+</form>
+{% endif %}
+
+</div>
+{% endblock content %}

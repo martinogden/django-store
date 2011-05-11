@@ -5,7 +5,7 @@
   {% for item in order %}
     <li>
       <a href="{{ item.product.get_absolute_url }}">{{ item.product }}</a> x {{ item.quantity }}
-      <small>[<a href="{% remove_from_order item.product %}">remove</a>]</small>
+      <small>[<a href="{% url order:remove-item content_type=item.content_type.pk object_id=item.object_id %}">remove</a>]</small>
     </li>
   {% endfor %}
   </ul>

@@ -121,10 +121,10 @@ class OrderTest(TestCase):
         response = self.add_item_to_order()
 
         ct = content_type(self.product)
-        response = self.client.get(reverse('order:remove-item'),
-            {'ct': ct.pk, 'pk': self.product.pk}, follow=True)
+        response = self.client.get(reverse('order:remove-item',
+            kwargs={'content_type': ct.pk, 'object_id': self.product.pk}), follow=True)
 
-        self.assertTrue(response.context['messages'])
+        self.assertTrue('messages' in response.context)
         assert 'info' in list(response.context['messages'])[0].tags.split()
 
         # Test order has been populated
@@ -139,11 +139,11 @@ class OrderTest(TestCase):
         self.assertTrue(response.context['messages'])
         assert 'error' in list(response.context['messages'])[0].tags.split()
 
-        # Test order hasn't been populated
-        self.assertEqual(len(response.context['order']), 0)
+        # Test order hasn't been created
+        self.assertFalse('order_id' in response.context)
 
     # Helpers
     def add_item_to_order(self):
         ct = content_type(self.product)
         return self.client.post(reverse('order:add-item'),
-            {'ct': ct.pk, 'pk': self.product.pk, 'q': 1}, follow=True)
+            {'content_type': ct.pk, 'object_id': self.product.pk, 'quantity': 1}, follow=True)

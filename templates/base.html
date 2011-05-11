@@ -5,7 +5,8 @@
   <title>{{ title|default:"DSMS" }}</title>
 </head>
 <body>
-  {% include "orders/order.html" %}
+  {% block basket %}{% include "orders/order.html" %}{% endblock basket %}
+
   {% if messages %}
   <ul class="messages">
       {% for message in messages %}
