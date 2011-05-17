@@ -5,7 +5,7 @@
 {% load order %}<div id="basket">
   <h3>Your Order</h3>
 
-{% if order and order|length %}
+{% if order.items.exists %}
   {% with order|length as item_count %}
   <p>{{ item_count }} item{{ item_count|pluralize }} | {{ order.total }}</p>
   {% endwith %}
@@ -14,8 +14,10 @@
     {% csrf_token %}
     {{ form.management_form }}
     {% for form in form.forms %}
-      {{ form.instance.product }}
+    {% with form.instance as item %}
+      <a href="{{ item.product.get_absolute_url }}">{{ item.product }}</a>
       {{ form }}
+    {% endwith %}
     {% endfor %}
 
     <input type="submit" value="update">

@@ -1,7 +1,7 @@
 {% load order %}<div id="basket">
   <h3>Your Basket</h3>
   <ul>
-  {% if order and order|length %}
+  {% if order.items.exists %}
   {% for item in order %}
     <li>
       <a href="{{ item.product.get_absolute_url }}">{{ item.product }}</a> x {{ item.quantity }}
