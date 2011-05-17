@@ -1,15 +1,12 @@
 import logging
 
-from django import forms
 from django.core.urlresolvers import reverse
 from django.views.generic import edit
-from django.forms.models import modelform_factory,\
-        inlineformset_factory, ModelForm
+from django.forms.models import modelform_factory, inlineformset_factory
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 
-from orders.models import Order, Item, InvalidItem
-from orders import signals
+from orders.models import Order, Item
 from orders.forms import ItemForm
 
 
