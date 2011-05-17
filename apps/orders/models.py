@@ -28,10 +28,10 @@ class Order(models.Model):
         return _('%i items(s)' % self.items.count())
 
     def is_mutable(self):
-        return self.status == 0
+        return self.status < 1
 
     def is_empty(self):
-        return self.items.count() == 0
+        return bool(self.items.count())
 
     def add(self, product, quantity=1):
         """
