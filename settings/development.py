@@ -16,7 +16,7 @@ DATABASES = {
 }
 
 try:
-    from settings import local
+    from settings.local import *
 except ImportError:
     pass
 
