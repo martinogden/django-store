@@ -1,10 +1,11 @@
-A very beta Django online store application
+# Django Store
+---
 
-PROJECT GOALS
+### Goals
 
  * A simple / flexible django-based store.
 
- * Any model with a price attribute can be added to the order (basket) via django's built in generic relations (@link https://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/).
+ * Any model with a price attribute can be added to the order (basket) via django's built in [generic relations](https://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/).
 
  * Payment and Shipping modules can be plugged in, and choices offered to the user on checkout.
 
@@ -12,9 +13,10 @@ PROJECT GOALS
 
  * Possibility to include a download with an item, which can be downloaded an arbitrary amount of times or within a set time period.
 
-USER ROUTE
 
-* When ser first interacts with the basket, an Order is created and associated with the users session - this session should persist as long as possible
+### User Journey
+
+* When user first interacts with the basket, an Order is created and associated with the users session - this session should persist as long as possible
 
 * The basket has many items. All baskets are persisted on the database
 
@@ -32,7 +34,8 @@ USER ROUTE
 
 * download link should be a redirect to a masked link on amazon S3, allowing 3 download attempts
 
-LICENCE
 
-Attribution 3.0 unported.
-@link http://creativecommons.org/licenses/by/3.0/
+ ---
+### Licence
+
+<a rel="license" href="http://creativecommons.org/licenses/by/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by/3.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported License</a>.
